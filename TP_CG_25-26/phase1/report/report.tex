@@ -1,0 +1,856 @@
+\documentclass[11pt, a4paper, fleqn]{article}
+
+\usepackage[portuguese]{babel}
+\usepackage{graphicx}
+\usepackage{leading}
+\usepackage{tabularx}
+\usepackage{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tocloft}
+\usepackage{caption}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{3d,calc,positioning,arrows.meta}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+\addto\captionsportuguese{%
+  \renewcommand{\contentsname}{Índice}%
+  \renewcommand{\listfigurename}{Índice de Figuras}%
+  \renewcommand{\listtablename}{Índice de Tabelas}%
+}
+
+%----------------- font -------------------------------------------------------%
+\usepackage[T1]{fontenc}
+\usepackage{paratype}
+\usepackage[basic, italic]{mathastext}
+
+%----------------- titles formats ---------------------------------------------%
+\usepackage{titlesec}
+\titleformat{\part}
+{\LARGE\bfseries}{\thepart}{1em}{}
+\titleformat{\section}
+{\LARGE\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+{\Large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\paragraph}[runin]
+{\sffamily\bfseries}
+{}
+{0pt}
+{}
+
+%----------------- footnote format --------------------------------------------%
+\usepackage[perpage, bottom, marginal]{footmisc}
+\makeatletter
+\renewcommand{\@makefnmark}{\hbox{\textsuperscript{\sffamily\@thefnmark}}}
+\makeatother
+\renewcommand*{\footnotelayout}{\footnotesize\sffamily}
+
+%----------------- page number format -----------------------------------------%
+\usepackage{fancyhdr}
+\fancypagestyle{pagestyle}{%
+	\fancyhf{} % clear all header and footer fields
+	\fancyfoot[C]{\makebox[\textwidth]{\sffamily\normalsize\thepage}} % centered footer
+	\renewcommand{\headrulewidth}{0pt}
+	\renewcommand{\footrulewidth}{0pt}
+}
+
+%----------------- verbatim ---------------------------------------------------%
+\usepackage{fancyvrb}
+
+\begin{document}
+\sffamily
+\setlength{\parindent}{0em}
+\emergencystretch 3em
+\renewcommand{\baselinestretch}{1.25} 
+
+\begin{titlepage}
+\includegraphics[width=26mm]{imgs/UM.jpg}\includegraphics[width=26mm]{imgs/EE.jpg}
+
+\vspace{7mm}
+\leading{17pt}
+{\Large
+	\textbf{Universidade do Minho}
+	\\
+	{\fontseries{l}\selectfont
+		Escola de Engenharia
+}}
+
+\vspace{50mm}
+\leading{27pt}
+{\huge
+	\textbf{Computação Gráfica}
+	\\
+	Trabalho Prático: Fase 1
+}
+\\
+%
+\\
+{\LARGE
+	Licenciatura em Engenharia Informática
+	\\
+	Ano Letivo 2025/2026}
+
+\vspace{22mm}
+\leading{15pt}
+{\Large
+	\begin{tabularx}{\textwidth}{@{}p{20mm} X}
+		\multicolumn{2}{@{}l}{\textbf{Grupo 03}} \\
+		\multicolumn{2}{@{}l}{} \\
+		a106919 & Eduardo Freitas Fernandes \\
+		a106842 & Gonçalo Rodrigues Ribeiro \\ 
+		a106888 & José Mário Raimundo Lima \\
+	\end{tabularx}
+}
+
+\vspace*{\fill}
+\end{titlepage}
+
+\newgeometry{left=25mm,right=20mm,top=25mm,bottom=25mm}
+\setlength{\parindent}{1em}
+
+\tableofcontents
+\newpage
+
+
+\section{Introdução}
+
+O presente relatório insere-se no âmbito da unidade curricular de \textbf{Computação Gráfica} e descreve o desenvolvimento da primeira fase do projeto, composta por duas aplicações distintas: o \textit{Generator} e o \textit{Engine}. Esta fase tem como objetivo principal a construção de um sistema capaz de gerar e visualizar \textbf{primitivas geométricas} tridimensionais de forma modular e estruturada. \\
+
+\noindent A aplicação \textbf{\textit{Generator}} é responsável pela geração de modelos geométricos, nomeadamente planos, caixas, esferas e cones (e cilindros e aneis). A partir de um conjunto de parâmetros fornecidos na linha de comandos, esta aplicação calcula os vértices correspondentes a cada primitiva e exporta-os para ficheiros num formato próprio (\texttt{.3d}). Estes ficheiros constituem uma representação intermédia da geometria, funcionando como elemento de ligação entre a fase de geração e a fase de visualização. \\
+
+\noindent Por sua vez, a aplicação \textbf{\textit{Engine}} tem como função interpretar ficheiros de configuração em formato XML, onde se encontra descrita a cena a renderizar. Com base nessa descrição, o \textit{Engine} procede ao carregamento dos modelos previamente gerados e realiza a sua renderização através da biblioteca \textbf{OpenGL}. Esta separação entre geração e renderização assegura uma organização clara de responsabilidades e estabelece uma base sólida para a extensão do sistema nas fases seguintes do projeto. \\
+
+\noindent A implementação foi realizada na linguagem \textbf{C++}, recorrendo à OpenGL para a visualização gráfica e a um parser XML para a leitura da descrição da cena. Ao longo deste relatório são apresentadas as principais \textbf{decisões} de projeto adotadas, a \textbf{arquitetura do sistema} e os \textbf{algoritmos} utilizados na geração das primitivas geométricas.
+
+\newpage
+
+\section{Primitivas Geométricas}
+
+\subsection{Plano}
+
+Matematicamente, um plano pode ser definido por um ponto de origem $P_0$ e dois vetores diretores não colineares, $\vec{u}$ e $\vec{v}$. Qualquer ponto $P$ pertencente ao plano é obtido através da combinação linear:
+\[
+P(s, t) = P_0 + s \times \vec{u} + t \times \vec{v}
+\]
+
+\noindent Onde $s, t \in [0, \text{length}]$ representam os parâmetros escalares de distância ao longo dos eixos locais da face. Para que o plano se apresente centrado na origem do sistema de coordenadas global, o ponto de partida $P_0$ é deslocado metade da dimensão total em sentido oposto aos vetores diretores. No plano $XZ$, com a normal orientada segundo o eixo $Y$, a configuração inicial estabelece:
+\[
+P_0 = \left( -\frac{L}{2}, 0, \frac{L}{2} \right), \quad \vec{u} = (1, 0, 0), \quad \vec{v} = (0, 0, -1)
+\]
+
+\noindent Para a representação digital, a superfície contínua é dividida numa malha de $n \times n$ células quadrangulares. O passo de discretização, definido por $\Delta = \frac{L}{n}$, determina a resolução da malha. Cada célula $(i, j)$ no domínio discreto, onde $i, j \in \{0, \dots, n-1\}$, possui quatro vértices canónicos definidos pelas coordenadas locais:
+\begin{enumerate}
+    \item Vértice do canto esquerdo inferior: $V_{bl} = P_0 + (i \times \Delta) \times \vec{u} + (j \times \Delta) \times \vec{v}$
+    \item Vértice do canto direito inferior: $V_{br} = P_0 + \Delta \times \vec{u}$
+    \item Vértice do canto esquerdo superior: $V_{tl} = P_0 + \Delta \times \vec{v}$
+    \item Vértice do canto direito superior: $V_{tr} = P_0 + \Delta \times \vec{u} + \Delta \times \vec{v}$
+\end{enumerate}
+
+\noindent As figuras ~\ref{fig:plane-cell-2d-1} e ~\ref{fig:plane-cell-2d-2} representam as duas primeiras iterações do algoritmo.
+
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=1]
+
+    \draw[->] (-1,0) -- (5,0) node[right] {$x$};
+    \draw[->] (0,-1) -- (0,5) node[above] {$z$};
+
+    \draw[gray!20] (-1,-1) grid (5,5);
+
+    \coordinate (A) at (1,1);
+    \coordinate (B) at (3,1);
+    \coordinate (C) at (3,3);
+    \coordinate (D) at (1,3);
+
+    \draw[thick] (A)--(B)--(C)--(D)--cycle;
+
+    \node[below left]  at (A) {$v_{bl}$};
+    \node[below right] at (B) {$v_{br}$};
+    \node[above right] at (C) {$v_{tr}$};
+    \node[above left] at (D) {$v_{tl}$};
+    
+    \draw[dashed] (A)--(C);
+
+    \draw[->, thick, blue] (A) -- (B)
+        node[midway, below] {$\vec{u}$};
+
+    \draw[->, thick, red] (A) -- (D)
+        node[midway, left] {$\vec{v}$};
+
+    \draw[->, thick, blue] (D) -- (C)
+        node[midway, above] {$\vec{u}$};
+
+    \draw[->, thick, red] (B) -- (C)
+        node[midway, right] {$\vec{v}$};
+    
+    \end{tikzpicture}
+
+    \caption{Triangulação de uma célula do plano (1ª iteração)}
+    \label{fig:plane-cell-2d-1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=1]
+
+    \draw[->] (-1,0) -- (5,0) node[right] {$x$};
+    \draw[->] (0,-1) -- (0,5) node[above] {$z$};
+
+    \draw[gray!20] (-1,-1) grid (6,5);
+
+    \coordinate (A) at (1,1);
+    \coordinate (B) at (3,1);
+    \coordinate (C) at (3,3);
+    \coordinate (D) at (1,3);
+
+    \draw[thick] (A)--(B)--(C)--(D)--cycle;
+
+    \coordinate (E) at (3,1);
+    \coordinate (F) at (5,1);
+    \coordinate (G) at (5,3);
+    \coordinate (H) at (3,3);
+
+    \draw[thick] (E)--(F)--(G)--(H)--cycle;
+
+    \node[below left]  at (E) {$v_{bl}$};
+    \node[below right] at (F) {$v_{br}$};
+    \node[above right] at (G) {$v_{tr}$};
+    \node[above left] at (H) {$v_{tl}$};
+
+    \draw[dashed] (A)--(C);
+    \draw[dashed] (E)--(G);
+
+    \draw[->, thick, blue] (E) -- (F)
+        node[midway, below] {$\vec{u}$};
+
+    \draw[->, thick, red] (E) -- (H)
+        node[midway, left] {$\vec{v}$};
+
+    \draw[->, thick, blue] (H) -- (G)
+        node[midway, above] {$\vec{u}$};
+
+    \draw[->, thick, red] (F) -- (G)
+        node[midway, right] {$\vec{v}$};
+    
+    \end{tikzpicture}
+
+    \caption{Triangulação de uma célula do plano (2ª iteração)}
+    \label{fig:plane-cell-2d-2}
+\end{figure}
+
+\noindent A estabilidade geométrica da malha requer que cada quadrícula seja subdividida em dois triângulos. A triangulação ocorre através da partição da célula por uma diagonal, tipicamente unindo $V_{br}$ a $V_{tl}$, resultando nos triângulos $T_1 = \{V_{bl}, V_{br}, V_{tl}\}$ and $T_2 = \{V_{br}, V_{tr}, V_{tl}\}$.
+
+\begin{figure}[H]
+ 	\centering
+	\fbox{\includegraphics[width=0.3\textwidth]{report/imgs/planeOpenGL.png}}
+	\caption{Plano com 3 unidades de comprimento e 6 divisões}
+	\label{fig:exemplo}
+\end{figure}
+
+
+\subsection{Cubo}
+
+O procedimento de criação de um cubo utiliza a lógica de construção de planos discutida anteriormente, onde cada face é mapeada para um dos planos cartesianos principais ou para planos paralelos a estes, deslocados de uma distância $\frac{d}{2}$ em relação à origem, onde $d$ representa a dimensão da aresta (representado por \texttt{dimension} no código). \\
+
+\begin{figure}[H]
+    \centering
+    
+    \tdplotsetmaincoords{70}{120}
+    \begin{tikzpicture}[tdplot_main_coords, scale=1]
+      \draw[->, red] (-4,0,0) -- (4,0,0) node[anchor=west] {$z$};
+      \draw[->, blue] (0,-3,0) -- (0,3,0) node[anchor=south] {$x$};
+      \draw[->, green!70!black] (0,0,-2) -- (0,0,2) node[anchor=south] {$y$};
+    
+      \coordinate (A) at (-1,-1,-1);
+      \coordinate (B) at ( 1,-1,-1);
+      \coordinate (C) at ( 1, 1,-1);
+      \coordinate (D) at (-1, 1,-1);
+    
+      \coordinate (E) at (-1,-1, 1);
+      \coordinate (F) at ( 1,-1, 1);
+      \coordinate (G) at ( 1, 1, 1);
+      \coordinate (H) at (-1, 1, 1);
+    
+      \draw (A)--(B)--(C)--(D)--cycle;
+    
+      \draw (E)--(F)--(G)--(H)--cycle;
+    
+      \draw (A)--(E);
+      \draw (B)--(F);
+      \draw (C)--(G);
+      \draw (D)--(H);
+    \end{tikzpicture}
+        
+    \caption{Representação do cubo centrado na origem}
+    \label{fig:cube-rep}
+\end{figure}
+
+\noindent Para garantir que a face do sólido está virada para a frente, cada face é definida por uma origem específica $P_0$ e dois vetores diretores $\vec{u}$ e $\vec{v}$. As seis faces são agrupadas em pares opostos ao longo dos eixos $X$, $Y$ e $Z$ (seja $\vec{x}, \, \vec{y}, \, \vec{z}$ os vetores elementares dos eixos):
+\begin{itemize}
+    \item \textbf{Eixo Z (+Z e -Z):} As faces frontal e traseira são geradas no plano $XY$. A face em $+Z$ utiliza os vetores $\{\vec{x}, \vec{y}\}$, enquanto a face em $-Z$ inverte o sentido de $\vec{u}$ para $\{-\vec{x}, \vec{y}\}$, compensando a orientação para manter a consistência da malha.
+    \item \textbf{Eixo X (+X e -X):} As faces laterais são definidas no plano $ZY$. A transição de orientação é feita trocando os componentes dos vetores diretores, utilizando o eixo $Z$ (positivo ou negativo) como direção horizontal local e o eixo $Y$ como vertical.
+    \item \textbf{Eixo Y (+Y e -Y):} As faces superior e inferior fecham a caixa no plano $XZ$. Aqui, as faces utilizam combinações de $\vec{x}$ e $\vec{z}$, garantindo que o topo e a base do cubo sejam perfeitamente ortogonais às faces laterais.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.3\linewidth]{report/imgs/cubeOpenGL.png}}
+    \caption{Caixa com 2 de dimensão e 3 divisões}
+    \label{fig:cubo-opengl}
+\end{figure}
+
+
+\subsection{Esfera}
+
+A construção geométrica de uma esfera em computação gráfica baseia-se na sua parametrização matemática, seguida da discretização da superfície em elementos planos (triângulos). O objetivo é aproximar uma superfície contínua por uma malha poligonal suficientemente fina. Considere-se uma esfera de raio $r$, centrada na origem do sistema cartesiano tridimensional. A sua definição implícita é:
+\[
+x^2 + y^2 + z^2 = r^2
+\]
+
+\noindent A esfera pode ser descrita através de coordenadas esféricas usando dois parâmetros angulares:
+\begin{itemize}
+    \item $\theta \in [0, \pi]$ - corresponde à variação vertical
+    \item $\phi \in [0, 2\pi]$ - corresponde à variação horizontal
+\end{itemize}
+
+\noindent A conversão para coordenadas cartesianas é dada por:
+\[
+x = r \times \sin(\theta) \times \sin(\phi)
+\]
+\[
+y = r \times \cos(\theta)
+\]
+\[
+z = r \times \sin(\theta) \times \cos(\phi)
+\]
+
+\noindent Por outras palavras, o ângulo $\theta$ controla a altura na esfera, para cada valor fixo de $\theta$ obtemos um círculo horizontal com raio $r_\theta = r \times \sin(\theta)$ e altura $y = r \times \cos(\theta)$. O ângulo $\phi$ percorre esse círculo. \\
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{report/imgs/sphere3dgeogebra.png}
+    \caption{Representação tridimensional da esfera}
+    \label{fig:placeholder}
+\end{figure}
+
+\noindent Para aproximar numericamente a esfera, os intervalos angulares são subdivididos:
+\[
+\Delta_\theta = \frac{\pi}{\text{slices}}
+\]
+\[
+\Delta_\phi = \frac{2\pi}{\text{stacks}}
+\]
+
+\noindent Assim:
+\[
+\theta_i = i \times \Delta_\theta, \quad \quad i = 0,1,\dots,\text{slices}
+\]
+\[
+\phi_j = j \times \Delta_\phi, \quad \quad j = 0,1,\dots,\text{stacks}
+\]
+
+\noindent Esta discretização cria uma grelha no domínio angular ($\theta$, $\phi$). Cada célula da malha corresponde a um pequeno retângulo no plano dos parâmetros:
+\[
+[\theta_i, \theta_{i+1}] \times [\phi_j, \phi_{j+1}]
+\]
+
+\noindent Definimos então os seguintes 4 ângulos que delimitam uma região retangular no espaço:
+\[
+\theta_1 = \theta_i
+\]
+\[
+\theta_2 = \theta_{i+1}
+\]
+\[
+\phi_1 = \phi_j
+\]
+\[
+\phi_2 = \phi_{j+1}
+\]
+
+\noindent Cada par ($\theta$, $\phi$) gera um ponto na esfera, obtendo no total 4 pontos que formam um retângulo (dois triângulos):
+\[
+P_1 =
+\begin{pmatrix}
+r \times \sin\theta_1 \times \sin\phi_1 \\
+r \times \cos\theta_1 \\
+r \times \sin\theta_1 \times \cos\phi_1
+\end{pmatrix}
+\]
+\[
+P_2 =
+\begin{pmatrix}
+r \times \sin\theta_1 \times \sin\phi_2 \\
+r \times \cos\theta_1 \\
+r \times \sin\theta_1 \times \cos\phi_2
+\end{pmatrix}
+\]
+\[
+P_3 =
+\begin{pmatrix}
+r \times \sin\theta_2 \times \sin\phi_1 \\
+r \times \cos\theta_2 \\
+r \times \sin\theta_2 \times \cos\phi_1
+\end{pmatrix}
+\]
+\[
+P_4 =
+\begin{pmatrix}
+r \times \sin\theta_2 \times \sin\phi_2 \\
+r \times \cos\theta_2 \\
+r \times \sin\theta_2 \times \cos\phi_2
+\end{pmatrix}
+\]
+
+\noindent Estes quatro pontos formam um quadrilátero curvo na superfície da esfera. Uma vez que o OpenGL trabalha com triângulos, cada quadrilátero é dividido em dois triângulos:
+\[
+T_1 = (P_1, P_4, P_2)
+\]
+\[
+T_2 = (P_1, P_3, P_4)
+\]
+
+\noindent O algoritmo para criar uma esfera consiste em:
+\begin{enumerate}
+    \item Percorrer sucessivamente valores de $\theta$, criando círculos horizontais.
+    \item Em cada círculo, percorrer valores de $\phi$, criando pontos com o mesmo espaçamento.
+    \item Ligar pontos adjacentes entre dois círculos consecutivos.
+    \item Dividir cada região em dois triângulos.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.3\linewidth]{report/imgs/sphereOpenGL.png}}
+    \caption{Esfera com 1 de raio, 10 slices e 10 stacks}
+\end{figure}
+
+\subsection{Cone}
+
+Um cone reto pode ser descrito como um sólido cuja base é um círculo de raio r num plano horizontal e cujo vértice está alinhado verticalmente acima do centro da base, a uma altura h. Assumimos aqui um cone com:
+\begin{itemize}
+    \item base no plano $y = 0$
+    \item centro da base na origem $(0,0,0)$
+    \item eixo do cone alinhado com o eixo $y$
+    \item vértice em $(0,h,0)$
+\end{itemize}
+
+\noindent A base é o conjunto de pontos que satisfaz:
+\[
+y = 0
+\]
+\[
+x^2 + z^2 = r^2
+\]
+
+\newpage
+
+\noindent Uma parametrização do círculo da base usa o ângulo $\theta \in [0,2\pi]$, que é o ângulo ao redor do eixo $y$, gera as seguintes coordenadas cartesianas (visivel na figura ~\ref{fig:circle2d}):
+\begin{itemize}
+    \item $x = r \times \cos(\theta)$
+    \item $z = r \times \sin(\theta)$
+    \item $y = 0$
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=3, line cap=round, line join=round, >=Latex]
+    
+    % --- parameters ---
+    \def\r{1.0}        % radius
+    \def\ang{35}       % angle (degrees)
+    
+    % --- axes (x horizontal, z vertical) ---
+    \draw[->] (-1.25,0) -- (1.35,0) node[right] {$x$};
+    \draw[->] (0,-0.95) -- (0,1.25) node[above] {$z$};
+    
+    % --- circle ---
+    \draw[thick] (0,0) circle (\r);
+    
+    % --- point on circle ---
+    \coordinate (P) at ({\r*cos(\ang)},{\r*sin(\ang)});
+    \coordinate (Px) at ({\r*cos(\ang)},0);
+    
+    \fill (0,0) circle (0.5pt) node[below left] {$O$};
+    \fill (P) circle (0.7pt) node[above right] {$P(\cos\theta,\sin\theta)$};
+    
+    % --- radius vector ---
+    \draw[thick] (0,0) -- (P);
+    
+    % --- angle theta ---
+    \draw[->] (0.35,0) arc[start angle=0, end angle=\ang, radius=0.35];
+    \node at (0.43,0.16) {$\theta$};
+    
+    % --- projection to x-axis ---
+    \draw[dashed] (P) -- (Px);
+    \fill (Px) circle (0.5pt);
+    
+    % --- cos(theta) segment on x-axis ---
+    \draw[very thick] (0,0) -- (Px);
+    \node[below] at ($(0,0)!0.5!(Px)$) {$\cos\theta$};
+    
+    % --- sin(theta) segment vertical ---
+    \draw[very thick] (Px) -- (P);
+    \node[right] at ($(Px)!0.5!(P)$) {$\sin\theta$};
+    
+    % --- right angle marker ---
+    \draw (Px) ++(-0.06,0) -- ++(0,0.06) -- ++(0.06,0);
+    
+    % --- optional labels for radius ---
+    \node[above left] at ($(0,0)!0.55!(P)$) {$r=1$};
+    
+    \end{tikzpicture}
+    
+    \caption{Coordenadas polares no plano cartesiano}
+    \label{fig:circle2d}
+\end{figure}
+
+\noindent A face lateral pode ser vista como a união de círculos horizontais à medida que subimos em $y$. A ideia essencial é à altura $l$, o raio do cone é menor do que $r$, esse raio diminui até zero ao chegar ao vértice do cone. Se definirmos um parâmetro de altura normalizado:
+\[
+t = \frac{y}{h}
+\quad \Rightarrow \quad t \in [0,1]
+\]
+
+\noindent então o raio da secção circular à altura $l$ é:
+\[
+R(l) = r \times (1 - t) = r \times \left(1 - \frac{l}{h}\right)
+\]
+
+\noindent garantindo que quando $l=0 \Rightarrow R(0)=r$ que corresponde á base e quando $l=h \Rightarrow R(h)=0$ que corresponde ao vértice do cone. O cone é parametrizado em duas componentes:
+\begin{itemize}
+    \item \textbf{slices}: divisões ao redor do cone (em ângulo)
+    \item \textbf{stacks}: divisões ao longo da altura
+\end{itemize}
+
+\noindent Tal como na esfera teremos:
+\[
+\Delta_\theta = \frac{2\pi}{\text{slices}}
+\]
+
+\noindent Para cada índice j:
+\[
+\theta_j = j \times \Delta_\theta
+\]
+\[
+\theta_{j+1} = (j+1) \times \Delta_\theta
+\]
+
+\noindent Estes dois ângulos definem as duas bordas laterais de uma fatia do cone.
+\[
+\Delta t = \frac{1}{\text{stacks}}
+\]
+
+\noindent Para cada índice i:
+\[
+t_i = \frac{i}{\text{stacks}}
+\]
+\[
+t_{i+1} = \frac{i+1}{\text{stacks}}
+\]
+
+\noindent e as alturas correspondentes são:
+\[
+l_i = t_i \times h
+\]
+\[
+l_{i+1} = t_{i+1} \times h
+\]
+
+\noindent Os raios correspondentes são:
+\[
+R_i = r \times (1 - t_i)
+\]
+\[
+R_{i+1} = r \times (1 - t_{i+1})
+\]
+
+\noindent Isto cria círculos horizontais ao longo do cone. Ao triangularem a base, escolhem-se dois ângulos consecutivos:
+\[
+\theta_0 = \theta_j = \frac{2 \times \pi \times j}{\text{slices}}
+\]
+\[
+\theta_1 = \theta_{j+1} = \frac{2 \times \pi \times (j+1)}{\text{slices}}
+\]
+
+\noindent Com isso, criam-se dois pontos no círculo da base:
+\[
+P_0 = (r \times \cos\theta_0,\ 0,\ r \times \sin\theta_0)
+\]
+\[
+P_1 = (r \times \cos\theta_1,\ 0,\ r \times \sin\theta_1)
+\]
+
+\noindent E usa-se também o centro:
+\[
+C = (0,0,0)
+\]
+
+\noindent Cada fatia da base é então um triângulo:
+\[
+(C,\ P_0,\ P_1)
+\]
+
+\noindent Repetindo este procedimento para todos os $j$, obtém-se um conjunto de triângulos que preenche a base. A superfície lateral usa a mesma ideia: para cada altura $l_i$ (stack) e ângulo $\theta_j$ (slice), define-se um ponto num círculo de raio $R_i$ ao nível $l_i$:
+\begin{itemize}
+    \item $x_{i,j} = R_i \times \cos\theta_j$
+    \item $y_{i,j} = l_i$
+    \item $z_{i,j} = R_i \times \sin\theta_j$
+\end{itemize}
+
+\newpage
+
+\noindent onde temos:
+\begin{itemize}
+    \item $l_i = \frac{i \times h}{\text{stacks}}$
+    \item $R_i = r \times \left(1-\frac{i}{\text{stacks}}\right)$
+    \item $\theta_j = \frac{2 \times \pi \times j}{\text{slices}}$
+\end{itemize}
+
+\noindent Este é o procedimento geométrico por trás da função que calcula pontos do cone (\texttt{conePoint()}). Entre dois níveis consecutivos i e $i+1$, e entre dois ângulos consecutivos j e $j+1$, temos quatro pontos:
+\begin{itemize}
+    \item $V_{bl} = S(t_i, \theta_j)
+\quad\text{(inferior-esquerdo)}$
+    \item $V_{br} = S(t_i, \theta_{j+1})
+\quad\text{(inferior-direito)}$
+    \item $V_{tl} = S(t_{i+1}, \theta_j)
+\quad\text{(superior-esquerdo)}$
+    \item $V_{tr} = S(t_{i+1}, \theta_{j+1})
+\quad\text{(superior-direito)}$
+\end{itemize}
+
+\noindent Considerando as fórmulas:
+\[
+    S(t,\theta) =
+    \begin{pmatrix}
+        r \times (1-t) \times \cos\theta \\
+        h \times t \\
+        r \times (1-t) \times \sin\theta
+    \end{pmatrix}
+\]
+\[
+t = \frac{i}{\text{stacks}}, \quad i=0,\dots,\text{stacks}
+\]
+\[
+\theta = \frac{2 \times \pi \times j}{\text{slices}}, \quad j=0,\dots,\text{slices}
+\]
+
+\noindent Esses quatro pontos formam uma célula lateral, que é dividida em 2 triângulos:
+\[ (V_{bl},\ V_{tl},\ V_{tr}) \]
+\[ (V_{bl},\ V_{tr},\ V_{br}) \]
+
+\noindent Ao repetir para todos os $i$ e $j$, obtém-se a superfície lateral completa.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.3\linewidth]{report/imgs/coneOpenGL.png}}
+    \caption{Cone com 1 de raio, 2 de altura, 10 slices e 10 stacks}
+\end{figure}
+
+\newpage
+
+\section{Primitivas Geométricas Extras}
+
+\subsection{Cilindro}
+
+A construção de um cilindro circular reto baseia-se na descrição geométrica de duas superfícies planas (bases) e de uma superfície lateral desenvolvível. Considera-se um cilindro de raio $r$ e altura $h$, centrado na origem do sistema de coordenadas, com eixo principal coincidente com o eixo $y$. Neste caso, a base superior encontra-se no plano $y = \frac{h}{2}$ e a base inferior no plano $y = -\frac{h}{2}$. Matematicamente, o cilindro pode ser descrito como o conjunto de pontos que satisfazem:
+\[
+x^2 + z^2 = r^2
+\quad \text{com} \quad
+y \in \left[-\frac{h}{2}, \frac{h}{2}\right].
+\]
+
+\noindent A geração da malha parte da discretização angular da circunferência da base. O intervalo angular completo é $[0,2\pi]$, o qual é dividido uniformemente em um número fixo de partes designado por *slices*. Define-se o incremento angular como:
+\[
+\Delta_\alpha = \frac{2 \times \pi}{\text{slices}}.
+\]
+
+\noindent Para cada índice inteiro ( i ), considera-se:
+\[
+\alpha_i = i \times \Delta_\alpha
+\quad \text{e} \quad
+\alpha_{i+1} = (i+1) \times \Delta_\alpha.
+\]
+
+\noindent Estes dois ângulos consecutivos determinam dois pontos adjacentes na circunferência de raio $r$:
+\[
+P_i = (r \times \cos\alpha_i, y, r \times \sin\alpha_i),
+\]
+\[
+P_{i+1} = (r \times \cos\alpha_{i+1}, y, r \times \sin\alpha_{i+1}).
+\]
+
+\noindent Para a base superior fixa-se $y = \frac{h}{2}$, enquanto para a base inferior fixa-se $y = -\frac{h}{2}$. A triangulação da base superior é realizada considerando o centro do disco:
+\[
+C_{top} = (0,\tfrac{h}{2},0),
+\]
+
+\noindent e formando triângulos do tipo:
+\[
+(C_{top}, P_{i+1}, P_i).
+\]
+
+\noindent Este procedimento é repetido para todos os valores de $i$, resultando numa decomposição radial do disco em triângulos que partilham um vértice comum no centro. De modo análogo, a base inferior é triangulada usando o ponto descrito abaixa, garantindo o preenchimento completo do disco inferior.
+\[
+C_{bottom} = (0,-\tfrac{h}{2},0),
+\]
+
+\noindent A superfície lateral é construída a partir da observação de que o cilindro pode ser entendido como a translação vertical de uma circunferência de raio constante. Para cada par angular consecutivo $(\alpha_i, \alpha_{i+1})$, definem-se quatro pontos:
+\[
+P_i^- = (r \times \cos\alpha_i, -\tfrac{h}{2}, r \times \sin\alpha_i),
+\]
+\[
+P_{i+1}^- = (r \times \cos\alpha_{i+1}, -\tfrac{h}{2}, r \times \sin\alpha_{i+1}),
+\]
+\[
+P_i^+ = (r \times \cos\alpha_i, \tfrac{h}{2}, r \times \sin\alpha_i),
+\]
+\[
+P_{i+1}^+ = (r \times \cos\alpha_{i+1}, \tfrac{h}{2}, r \times \sin\alpha_{i+1}).
+\]
+
+\noindent Estes quatro pontos definem um quadrilátero na superfície lateral do cilindro. Como a representação gráfica utiliza exclusivamente triângulos, esse quadrilátero é dividido em dois triângulos adjacentes:
+\[
+(P_{i+1}^-, P_i^-, P_{i+1}^+)
+\]
+\[
+(P_{i+1}^+, P_i^-, P_i^+).
+\]
+
+\noindent A repetição deste processo para todos os valores de $i$ produz uma malha lateral composta por faixas retangulares trianguladas. Do ponto de vista geométrico, o método corresponde à discretização da parametrização:
+\[
+S(\alpha, y) =
+\begin{pmatrix}
+r \times \cos\alpha \\
+y \\
+r \times \sin\alpha
+\end{pmatrix},
+\quad
+\alpha \in [0,2\pi],
+\quad
+y \in \left[-\tfrac{h}{2}, \tfrac{h}{2}\right].
+\]
+
+\noindent A discretização é efetuada apenas na variável angular, enquanto a coordenada vertical assume apenas dois valores extremos para cada faixa lateral. O resultado é uma aproximação poligonal do cilindro cuja qualidade aumenta proporcionalmente ao número de slices. Quanto maior o número de divisões angulares, menor será a diferença entre a malha gerada e a superfície cilíndrica contínua.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.3\linewidth]{report/imgs/cylinderOpenGL.png}}
+    \caption{Cilindro com 1 de raio, 2 de altura e 10 slices}
+\end{figure}
+
+
+\subsection{Anel}
+
+A função \texttt{generateRing()} constrói geometricamente um anel tridimensional. Esta superfície pode ser entendida como o resultado da rotação de um círculo em torno de um eixo exterior ao próprio círculo. Mais concretamente, considera-se um círculo de raio $r$ (designado por raio menor) cujo centro percorre uma circunferência de raio $R$ (designado por raio maior). O eixo de rotação é perpendicular ao plano do círculo gerador. \\
+
+\noindent Geometricamente, o processo pode ser descrito em duas etapas conceptuais. Primeiro, define-se um círculo de raio $r$ num plano vertical. Em seguida, esse círculo é deslocado de modo que o seu centro fique a uma distância $R$ do eixo vertical. Finalmente, todo o conjunto é rodado em torno desse eixo, descrevendo uma trajetória circular completa. \\
+
+\noindent A descrição matemática utiliza dois ângulos independentes. O primeiro ângulo, usualmente representado por $\theta$, controla a rotação do círculo gerador em torno do eixo principal. O segundo ângulo, $\phi$, percorre os pontos do próprio círculo gerador. A parametrização clássica do anel pode ser escrita, de forma compacta, como:
+\begin{itemize}
+    \item $x = (R + r \times \cos\phi) \times \cos\theta$
+    \item $y = r \times \sin\phi$
+    \item $z = (R + r \times \cos\phi) \times \sin\theta$
+\end{itemize}
+
+\noindent O termo $R + r \times \cos\phi$ representa a distância radial ao eixo vertical. Quando $\phi = 0$, o ponto encontra-se na parte exterior do anel, quando $\phi = \pi$, encontra-se na parte interior. O valor de $y$ é determinado exclusivamente pela posição no círculo gerador. \\
+
+\noindent Para gerar a malha poligonal, o domínio angular completo de ambos os ângulos é dividido uniformemente. O ângulo $\theta$ é subdividido em um certo número de \texttt{rings}, que correspondem às divisões ao longo da direção circular principal do anel. O ângulo $\phi$ é subdividido em \texttt{sides}, que correspondem às divisões ao longo da secção transversal do anel. \\
+
+\noindent Cada par de valores consecutivos $(\theta_i, \theta_{i+1})$ e $(\phi_j, \phi_{j+1})$ define uma pequena região retangular no espaço paramétrico. No espaço tridimensional, essa região transforma-se num quadrilátero curvo sobre a superfície do toro. Os quatro pontos correspondentes são obtidos aplicando a parametrização aos quatro pares de ângulos combinados. \\
+
+\noindent Como a representação gráfica utiliza triângulos, cada quadrilátero é dividido em duas faces triangulares. A ordenação consistente dos vértices garante que estes estão virados para a "frente", garantindo a sua visualização. \\
+
+\noindent Em síntese, o procedimento baseia-se na rotação de um círculo de raio $r$ ao longo de uma trajetória circular de raio $R$, seguida da discretização uniforme dos dois parâmetros angulares que descrevem essa construção.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.5\linewidth]{report/imgs/ringOpenGL.png}}
+    \caption{Anél com 2 de raio maior, 1 de raio menor, 10 sides e 20 rings}
+\end{figure}
+
+\newpage
+
+
+\section{Arquitetura do Sistema}
+
+O sistema desenvolvido nesta fase segue uma arquitetura modular composta por duas aplicações principais: \textbf{\textit{Generator}} e \textbf{\textit{Engine}}. O \textbf{\textit{Generator}} é responsável por produzir malhas triangulares de primitivas geométricas a partir de parâmetros fornecidos na linha de comandos, exportando essa geometria para ficheiros \texttt{.3d}. A \textbf{\textit{Engine}} interpreta um ficheiro de configuração em \textbf{\texttt{XML}}, carrega os modelos referenciados e procede à sua renderização através de \textbf{OpenGL}.\\
+
+\noindent Esta organização estabelece uma separação clara entre a geração procedural (cálculo de vértices e triangulação) e a fase de visualização, promovendo modularidade, reutilização de código e facilidade de extensão para fases futuras.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.8\linewidth]{report/imgs/ArquiteturaFase1.png}}
+    \caption{Esquema geral da Arquitetura do Sistema}
+    \label{fig:ArquiteturaFase1}
+\end{figure}
+
+\noindent Como ilustrado na Figura~\ref{fig:ArquiteturaFase1}, a arquitetura encontra-se estruturada em dois módulos independentes que partilham um conjunto de estruturas internas comuns (World, Group, Model, Point e Vector). Esta camada intermédia assegura uma representação consistente da geometria e da organização da cena, permitindo que o \textit{Generator} e a \textit{Engine} reutilizem as mesmas abstrações sem dependências diretas entre si.
+
+\newpage
+
+\subsection{Formato do Ficheiro 3D}
+
+O ficheiro \texttt{.3d} constitui a representação intermédia da geometria gerada pelo \textbf{\textit{Generator}}, servindo como ligação entre a fase de geração e a fase de visualização. O seu objetivo é armazenar, de forma simples e estruturada, os vértices que compõem a malha triangulada de cada primitiva.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\includegraphics[width=0.5\linewidth]{report/imgs/formato3D.png}}
+    \caption{Formato do ficheiro 3D}
+    \label{fig:formato3D}
+\end{figure}
+
+\noindent Como se observa na Figura~\ref{fig:formato3D}, a primeira linha indica o número total de vértices armazenados no ficheiro. As restantes linhas correspondem às coordenadas tridimensionais de cada vértice, organizadas sequencialmente no formato $x\;y\;z$. Cada conjunto consecutivo de três vértices define um triângulo da malha, permitindo que o \textbf{\textit{Engine}} reconstrua a geometria diretamente a partir da ordem de leitura. Esta organização dos valores permite um parsing simples.
+
+\subsection{Generator}
+
+O \textbf{\textit{Generator}} é uma aplicação de linha de comandos que gera primitivas geométricas e exporta o resultado para ficheiros \textbf{\texttt{.3d}}. Nesta fase foram implementadas as primitivas: plano, caixa, esfera e cone. Adicionalmente, foram desenvolvidas duas primitivas extra: cilindro e anel. Cada comando recebe os parâmetros geométricos necessários (dimensão/raio/altura, divisões, slices e stacks) e o nome do ficheiro de saída. \\
+
+\noindent Internamente, os vértices são acumulados numa estrutura \textbf{\texttt{Model}}, através da adição sequencial de triângulos. No caso da caixa, foi utilizado um procedimento genérico de construção de faces parametrizado por um ponto de origem e dois vetores direção, permitindo gerar as seis faces com o mesmo algoritmo e reduzindo duplicação de código. Por fim, a função \texttt{toFile()} serializa os vértices para o formato \textbf{\texttt{.3d}}.
+
+\subsection{Engine}
+
+A \textbf{\textit{Engine}} é responsável por carregar e renderizar uma cena descrita num ficheiro \textbf{\texttt{XML}}. O \textbf{\texttt{XML}} contém a configuração da janela e da câmara, bem como a lista de modelos \textbf{\texttt{.3d}} a carregar. \\
+
+\noindent A interpretação do \textbf{\texttt{XML}} é efetuada com a biblioteca \textbf{\texttt{tinyxml2}}, sendo os valores extraídos armazenados em estruturas próprias do projeto (por exemplo, classes como \textbf{\texttt{World}}, \textbf{\texttt{Group}} e \textbf{\texttt{Model}}). Após a leitura do ficheiro, a \textbf{\textit{Engine}} carrega os ficheiros \textbf{\texttt{.3d}}, reconstruindo a lista de vértices. A renderização é realizada em OpenGL, desenhando-se cada triângulo a partir de conjuntos consecutivos de três vértices.
+
+\subsection{Controlo da Câmara}
+
+Além da renderização dos modelos, a aplicação \textit{Engine} integra um sistema de câmara interativa baseado em coordenadas esféricas, centrada na origem do mundo. As coordenadas cartesianas iniciais, extraídas do ficheiro XML de configuração, são convertidas nos parâmetros $r$ (raio), $\alpha$ e $\beta$ (ângulos), permitindo uma navegação orbital fluida em torno da cena.\\
+
+\noindent Esta conversão facilita a rotação em torno do centro da cena. As variáveis esféricas consistem no raio de visão ($r$) e nos ângulos horizontal ($\alpha$) e vertical ($\beta$). O cálculo dinâmico da nova posição da câmara a cada frame é feito através das seguintes equações:
+
+$$x = r \times \cos(\beta) \times \sin(\alpha)$$
+$$y = r \times \sin(\beta)$$
+$$z = r \times \cos(\beta) \times \cos(\alpha)$$
+\\
+\noindent A interação do utilizador é gerida através de \textit{callbacks} da biblioteca GLUT:
+\begin{itemize}
+    \item \textbf{Teclas Direcionais (Setas):} Alteram os ângulos $\alpha$ e $\beta$, permitindo rodar a câmara em torno da cena. O ângulo $\beta$ foi limitado ao intervalo $[-\frac{\pi}{2}, \frac{\pi}{2}]$ radianos para evitar a inversão da câmara.
+    \item \textbf{Teclas `w' e `s':} Alteram o raio ($r$), aproximando (zoom in) ou afastando (zoom out) a câmara da origem (com um limite mínimo de $1.0$).
+    \item \textbf{Tecla `l':} Alterna o estado de bloqueio da câmara (\textit{fixedCam}), permitindo fixar a perspetiva ou libertá-la para exploração livre.
+\end{itemize}
+
+\noindent Sempre que os parâmetros são alterados, a função \texttt{glutPostRedisplay()} é invocada, atualizando a janela e alimentando os novos valores cartesianos à função \texttt{gluLookAt}.
+
+
+\newpage
+
+\section{Conclusão}
+
+A primeira fase deste projeto prático permitiu concretizar com sucesso os objetivos propostos relativos à geração procedimental e renderização gráfica de primitivas 3D.\\
+
+\noindent A separação do sistema em duas aplicações independentes, \textit{Generator} e \textit{Engine}, demonstrou ser uma abordagem estrutural adequada. O \textit{Generator} assegura o cálculo matemático dos vértices das diferentes figuras (plano, caixa, esfera e cone), efetuando a sua serialização para o formato intermédio \texttt{".3d"}. Por sua vez, o \textit{Engine} assume o processamento do ficheiro de configuração XML, com recurso à biblioteca \textit{tinyxml2}, e a consequente renderização da cena através do OpenGL. A integração de uma câmara orbital interativa revelou-se um mecanismo fundamental nesta fase, permitindo a exploração espacial e a validação da correção geométrica dos modelos gerados.\\
+
+\noindent Durante o desenvolvimento, a principal exigência técnica centrou-se no cálculo das coordenadas esféricas e polares para a divisão da esfera e do cone em \textit{slices} e \textit{stacks}. Para a construção da \textit{box}, adotou-se uma estratégia de reaproveitamento da lógica algorítmica do plano, aplicando as devidas transformações espaciais para formar as seis faces, o que permitiu otimizar a estrutura do código.
+
+
+\end{document}

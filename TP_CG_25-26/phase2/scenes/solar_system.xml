@@ -1,0 +1,133 @@
+<world>
+    <window width="1024" height="1024" />
+    <camera>
+        <position x="45" y="35" z="45" /> 
+        <lookAt x="0" y="0" z="0" />
+        <up x="0" y="1" z="0" />
+        <projection fov="60" near="1" far="500" />
+    </camera>
+
+    <group>
+        <transform>
+            <scale x="6" y="6" z="6" />
+        </transform>
+        <models>
+            <model file="sphere.3d" />
+        </models>
+
+        <group>
+            <transform>
+                <rotate angle="0" x="0" y="1" z="0" />
+                <translate x="7" y="-1" z="0" />
+                <scale x="0.3" y="0.3" z="0.3" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="60" x="0" y="1" z="0" />
+                <translate x="9" y="2" z="0" />
+                <scale x="0.6" y="0.6" z="0.6" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="110" x="0" y="1" z="0" />
+                <translate x="12" y="0" z="0" />
+                <scale x="0.7" y="0.7" z="0.7" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+            <group>
+                <transform>
+                    <translate x="1.2" y="0" z="0" />
+                    <scale x="0.25" y="0.25" z="0.25" />
+                </transform>
+                <models>
+                    <model file="sphere.3d" />
+                </models>
+            </group>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="160" x="0" y="1" z="0" />
+                <translate x="15" y="-3" z="0" />
+                <scale x="0.4" y="0.4" z="0.4" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="210" x="0" y="1" z="0" />
+                <translate x="21" y="4" z="0" />
+                <scale x="2.8" y="2.8" z="2.8" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+            <group>
+                <transform>
+                    <translate x="1.3" y="0" z="0" />
+                    <scale x="0.15" y="0.15" z="0.15" />
+                </transform>
+                <models>
+                    <model file="sphere.3d" />
+                </models>
+            </group>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="260" x="0" y="1" z="0" />
+                <translate x="28" y="-4" z="0" />
+                <scale x="2.4" y="2.4" z="2.4" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+            <group>
+                <transform>
+                    <rotate angle="30" x="1" y="0" z="0" />
+                    <scale x="1" y="0.3" z="1" />
+                </transform>
+                <models>
+                    <model file="ring.3d" />
+                </models>
+            </group>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="310" x="0" y="1" z="0" />
+                <translate x="33" y="5" z="0" />
+                <scale x="1.3" y="1.3" z="1.3" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+        </group>
+
+        <group>
+            <transform>
+                <rotate angle="350" x="0" y="1" z="0" />
+                <translate x="38" y="0" z="0" />
+                <scale x="1.3" y="1.3" z="1.3" />
+            </transform>
+            <models>
+                <model file="sphere.3d" />
+            </models>
+        </group>
+    </group>
+</world>

@@ -2,6 +2,8 @@
 
 Trabalho Prático de **Computação Gráfica** 2025/2026.
 
+**Nota:** 18
+
 ## Descrição
 
 Este projeto consiste no desenvolvimento de um **motor gráfico 3D baseado em Scene Graphs**, capaz de processar ficheiros de configuração XML para gerar e visualizar cenas complexas. O trabalho divide-se em duas aplicações principais: um **Generator**, responsável pelo cálculo geométrico e exportação de primitivas gráficas, e um **Engine**, que interpreta a estrutura da cena, gere a câmara e renderiza os modelos.
